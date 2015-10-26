@@ -25,6 +25,7 @@
 # For security
 
 /src/main/resources/
+/src/HostProvider.hs
 
 # Generated files - use gradlew generate to make them
 

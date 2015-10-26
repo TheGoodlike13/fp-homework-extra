@@ -3,6 +3,7 @@ module Main where
 import Control.Monad
 import Data.List
 import Data.Maybe
+import HostProvider
 import JsonParser
 import Network.HTTP
 import System.Environment
@@ -28,10 +29,6 @@ convert (x, y, token)
 convertToken :: Token -> Char
 convertToken token = head (show token)
 
-ipAddress :: String
-ipAddress = "tictactoe.homedir.eu"
---ipAddress = "localhost:8080"
-
 gameUrl :: String -> String -> String
 gameUrl gameId playerId = "http://" ++ ipAddress ++ "/game/" ++ gameId ++ "/player/" ++ playerId
 
@@ -55,10 +52,11 @@ playGame matchUrl = do
     let board = moves >>= replay
     let nextGameMove = board >>= nextMove
     let movesAfter = liftM2 appendMove moves nextGameMove
+    print board
     if (isNothing movesAfter) then
         print "Game over!" >> return ()
     else
-        postGame matchUrl (fromJust movesAfter) >> print (fromJust board) >> playGame matchUrl
+        postGame matchUrl (fromJust movesAfter) >> print (movesAfter >>= replay) >> playGame matchUrl
 
 appendMove :: MoveHistory -> Move -> MoveHistory
 appendMove moves lastMove = moves ++ [lastMove]
