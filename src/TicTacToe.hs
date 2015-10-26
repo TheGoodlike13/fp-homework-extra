@@ -80,6 +80,7 @@ nextMove board
     | haveAnyWinningMoves = Just (head winningMoves)
     | nextPlayerHasMoreThanOneWinningMove = Nothing
     | nextPlayerHasOneWinningMove = Just (overtake (head nextPlayerWinningMoves))
+    | nextPlayerHasWinningMoveInTwoTurns = Just (overtake (head nextPlayerWinningMovesInTwoTurns))
     | otherwise = Just (head possibleMoves)
     where
         nextPlayer = getNextPlayer board
@@ -90,6 +91,8 @@ nextMove board
         nextPlayerWinningMoves = findWinningMoves otherPlayerMoves board
         nextPlayerHasOneWinningMove = length nextPlayerWinningMoves == 1
         nextPlayerHasMoreThanOneWinningMove = length nextPlayerWinningMoves > 1
+        nextPlayerWinningMovesInTwoTurns = findWinningMovesInTwoTurns (other nextPlayer) board possibleMoves []
+        nextPlayerHasWinningMoveInTwoTurns = length nextPlayerWinningMovesInTwoTurns > 0
 
 gameWinner :: Board -> Maybe Token
 gameWinner board
@@ -200,3 +203,21 @@ findWinningMoves (move : others) board
 
 forceMove :: Move -> Board -> Board
 forceMove move board = fromJust (applyMove move board)
+
+findWinningMovesInTwoTurns :: Token -> Board -> [Move] -> [Move] -> [Move]
+findWinningMovesInTwoTurns _ _ [] accumulatedMoves = accumulatedMoves
+findWinningMovesInTwoTurns player board (move : others) accumulatedMoves
+    = findWinningMovesInTwoTurns player board others (accumulatedMoves ++ findWinningMovesNextTurn player afterMove allMovesAfter [])
+    where
+        afterMove = forceMove move board
+        allMovesAfter = findAllPossibleMoves afterMove player
+
+findWinningMovesNextTurn :: Token -> Board -> [Move] -> [Move] -> [Move]
+findWinningMovesNextTurn _ _ [] accumulatedMoves = reverse accumulatedMoves
+findWinningMovesNextTurn player board (move : others) accumulatedMoves
+    | length winningMoves > 1 = findWinningMovesNextTurn player board others (move : accumulatedMoves)
+    | otherwise = findWinningMovesNextTurn player board others accumulatedMoves
+    where
+        afterMove = forceMove move board
+        allMovesAfter = findAllPossibleMoves afterMove player
+        winningMoves = findWinningMoves allMovesAfter afterMove
