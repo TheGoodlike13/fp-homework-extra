@@ -52,11 +52,18 @@ playGame matchUrl = do
     let board = moves >>= replay
     let nextGameMove = board >>= nextMove
     let movesAfter = liftM2 appendMove moves nextGameMove
+    let boardAfter = movesAfter >>= replay
+    let isFinalMove = isNothing (boardAfter >>= nextMove)
     print board
-    if (isNothing movesAfter) then
-        print "Game over!" >> return ()
-    else
-        postGame matchUrl (fromJust movesAfter) >> print (movesAfter >>= replay) >> playGame matchUrl
+    if (isNothing movesAfter) then gameOver
+    else do
+        postGame matchUrl (fromJust movesAfter)
+        print boardAfter
+        if isFinalMove then gameOver
+        else playGame matchUrl
+
+gameOver :: IO()
+gameOver = print "Game over!"
 
 appendMove :: MoveHistory -> Move -> MoveHistory
 appendMove moves lastMove = moves ++ [lastMove]

@@ -33,7 +33,6 @@
 
 # haskell
 
-Setup.hs
 /dist/
 .cabal-sandbox/
 cabal.sandbox.config
