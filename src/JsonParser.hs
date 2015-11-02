@@ -23,6 +23,8 @@ data JsonValue = JsonArray [JsonValue]
                     | JsonInt Int
                     | JsonInteger Integer
                     | JsonDouble Double
+                    | JsonBool Bool
+                    | JsonNull
                     deriving (Eq)
 
 instance {-# OVERLAPPING #-} Show JsonPair where
@@ -33,6 +35,8 @@ instance Show JsonValue where
     show (JsonInt int) = show int
     show (JsonInteger int) = show int
     show (JsonDouble double) = show double
+    show (JsonBool bool) = show bool
+    show JsonNull = "null"
     show (JsonArray list) = "[" ++ intercalate ", " [show e | e <- list] ++ "]"
     show (JsonObject list) = "{" ++ intercalate ", " [show e | e <- list] ++ "}"
 
@@ -45,14 +49,16 @@ parse any
         result = fmap fst parseResult
 
 parseNextValue :: String -> Maybe (JsonValue, String)
-parseNextValue "" = Nothing
 parseNextValue (char : rest)
     | isSpace char = parseNextValue rest
     | char == '[' = parseNextArray rest
     | char == '{' = parseNextObject rest
     | char == '"' = parseNextString rest
     | isDigit char || char == '-' = parseNextNumber (char : rest)
-    | otherwise = Nothing
+parseNextValue ('t' : 'r' : 'u' : 'e' : rest) = Just (JsonBool True, rest)
+parseNextValue ('f' : 'a' : 'l' : 's' : 'e' : rest) = Just (JsonBool False, rest)
+parseNextValue ('n' : 'u' : 'l' : 'l' : rest) = Just (JsonNull, rest)
+parseNextValue _ = Nothing
 
 parseNextArray :: String -> Maybe (JsonValue, String)
 parseNextArray any = parseNextArrayWithResults any Nothing []
