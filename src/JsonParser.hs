@@ -94,20 +94,21 @@ parseNextObjectWithResults json _ fullMem
 
 parseNextPair :: String -> Maybe (JsonPair, String)
 parseNextPair (char : rest)
-    | isSpace char = Nothing
-    | char == '"' =  parseNextString rest >>= (\key -> parseValueInPair (snd key) (extract (fst key)))
+    | isSpace char = parseNextPair rest
+    | char == '"' = parseNextString rest >>= (\key -> parseValueInPair (snd key) (extract (fst key)))
+parseNextPair _ = Nothing
 
 parseValueInPair :: String -> String -> Maybe (JsonPair, String)
-parseValueInPair "" _ = Nothing
-parseValueInPair (':' : rest) key = parseNextValue rest >>= (\value -> Just ((key, (fst value)), (snd value)))
+parseValueInPair (char : rest) key
+    | isSpace char = parseValueInPair rest
+    | char == ':' = parseNextValue rest >>= (\value -> Just ((key, (fst value)), (snd value)))
+parseValueInPair _ _ = Nothing
 
 parseNextString :: String -> Maybe (JsonValue, String)
 parseNextString any = parseNextStringWithResult any []
 
 parseNextStringWithResult :: String -> String -> Maybe (JsonValue, String)
-parseNextStringWithResult "" _ = Nothing
 parseNextStringWithResult ('"' : rest) mem = Just (JsonString (reverse mem), rest)
-parseNextStringWithResult [char] _ = Nothing
 parseNextStringWithResult ('\\' : escaped : rest) mem
     | escaped == '"' = parseNextStringWithResult rest ('"' : mem)
     | escaped == '\\' = parseNextStringWithResult rest ('\\' : mem)
@@ -120,10 +121,10 @@ parseNextStringWithResult ('\\' : escaped : rest) mem
 parseNextStringWithResult ('\\' : 'u' : hex1 : hex2 : hex3 : hex4 : rest) mem
     | all isHexDigit hexStr = parseNextStringWithResult rest ((charFromUnicode hexStr) : mem)
     where hexStr = [hex1, hex2, hex3, hex4]
-parseNextStringWithResult ('\\' : rest) _ = Nothing
 parseNextStringWithResult (char : rest) mem
-    | isControl char = Nothing
+    | char == '\\' || isControl char = Nothing
     | otherwise = parseNextStringWithResult rest (char : mem)
+parseNextStringWithResult _ _ = Nothing
 
 parseNextNumber :: String -> Maybe (JsonValue, String)
 parseNextNumber any = parseNextNumberWithResult any [] toInt
